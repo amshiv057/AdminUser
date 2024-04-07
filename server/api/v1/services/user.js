@@ -5,11 +5,9 @@ const userServices = {
         return await userModel.create(insertObj);
     },
     findUser: async (query) => {
-        return await userModel.find(query).populate({ path: 'adminId' });
+        return await userModel.findOne(query);s
     },
-    findUserList: async () => {
-        return await userModel.find();
-    }
+
 }
 
 module.exports = { userServices };

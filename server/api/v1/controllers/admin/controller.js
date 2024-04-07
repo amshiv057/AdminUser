@@ -2,36 +2,14 @@ import Joi from "joi";
 import responseMessage from "../../../../../assets/responseMessage";
 import response from "../../../../../assets/response";
 import apiError from "../../../../helper/apiError";
-import { adminServices } from "../../services/admin";
-const { createAdmin, findAdmin } = adminServices;
 import { userServices } from "../../services/user";
-const { createUser, findUser, findUserList } = userServices;
-import { createHash, compareHash, getToken } from "../../../../helper/utils";
+import { quizServices } from "../../services/quiz";
+const { findUser } = userServices;
+const { createQuiz, findQuiz, findQuizList, deleteQuiz } = quizServices;
+import { compareHash, getToken } from "../../../../helper/utils";
 
 class adminController {
-    async createAdmin(req, res, next) {
-        const validSchema = Joi.object({
-            name: Joi.string().required(),
-            email: Joi.string().required(),
-            password: Joi.string().required()
 
-        });
-        try {
-            const { value } = validSchema.validate(req.body);
-            console.log(value);
-            const adminResult = await findAdmin({ email: value.email });
-            console.log(adminResult);
-            if (adminResult.length > 0) {
-                throw apiError.alreadyExist(responseMessage.EMAIL_EXIST)
-            }
-            const hashPassword = await createHash(value.password);
-            value.password = hashPassword;
-            const result = await createAdmin(value);
-            return res.json(new response(result, responseMessage.ADMIN_CREATED));
-        } catch (error) {
-            next(error);
-        }
-    };
     async loginAdmin(req, res, next) {
         const validSchema = Joi.object({
             email: Joi.string().required(),
@@ -39,60 +17,99 @@ class adminController {
         });
         try {
             const { value } = validSchema.validate(req.body);
-            const adminResult = await findAdmin({ email: value.email });
+            console.log(value)
+            const adminResult = await findUser({ email: value.email });
             console.log(adminResult);
             if (!adminResult) {
                 throw apiError.notFound(responseMessage.ADMIN_NOT_FOUND);
             }
-            const token = await getToken({ id: adminResult[0]. _id, email: value.email });
+            const passwordCheck = await compareHash(adminResult.password, value.password);
+            if (!passwordCheck) {
+                throw apiError.invalid(responseMessage.INCORRECT_PASSWORD);
+            }
+            const token = await getToken({ _id: adminResult._id, email: value.email });
             return res.json(new response({ adminResult, token }, responseMessage.USER_LOGGED))
         } catch (error) {
             next(error);
         }
     }
-    async createUser(req, res, next) {
+    async createQuiz(req, res, next) {
         const validSchema = Joi.object({
-            name: Joi.string().required(),
-            email: Joi.string().required(),
-            password: Joi.string().required()
+            title: Joi.string().required(),
+            description: Joi.string().required(),
+            questions: Joi.array().required()
+
         });
         try {
             const { value } = validSchema.validate(req.body);
-            const adminResult = await findAdmin({ _id: req.userId });
+            console.log(value);
+            const adminResult = await findUser({ _id: req.userId });
             if (!adminResult) {
                 throw apiError.unauthorized(responseMessage.UNAUTHORIZED);
             }
-            const userResult = await findUser({ email: value.email });
-            if (userResult.length>0) {
-                throw apiError.alreadyExist(responseMessage.USER_EXIST);
+            const result = await createQuiz(value);
+            return res.json(new response(result, responseMessage.ADMIN_CREATED));
+        } catch (error) {
+            next(error);
+        }
+    };
+    async quizList(req, res, next) {
+        try {
+            const adminResult = await findUser({ _id: req.userId });
+            if (!adminResult) {
+                throw apiError.unauthorized(responseMessage.UNAUTHORIZED);
             }
-            const hashPassword = await createHash(value.password);
-            const obj = {
-                adminId: req.userId,
-                name: value.name,
-                email: value.email,
-                password: hashPassword
+            const result = await findQuizList();
+            if (result.length == 0) {
+                throw apiError.notFound(responseMessage.DATA_NOT_FOUND);
             }
-            const result = await createUser(obj);
             return res.json(new response(result, responseMessage.USER_CREATED));
         } catch (error) {
             next(error);
             console.log(error);
         }
     }
-    async getUserList(req, res, next) {
+
+    async findQuiz(req, res, next) {
+        const validSchema = Joi.object({
+            _id: Joi.string().required()
+        })
         try {
-            const adminResult = await findAdmin({ _id: req.userId });
+            const { value } = validSchema.validate(req.params);
+            const adminResult = await findUser({ _id: req.userId });
             if (!adminResult) {
                 throw apiError.unauthorized(responseMessage.UNAUTHORIZED);
             }
-            const result = await findUserList();
-            return res.json(new response(result, responseMessage.DATA_FOUND));
+            const quizResult = await findQuiz({ _id: value._id });
+            if (!quizResult) {
+                throw apiError.notFound(responseMessage.DATA_NOT_FOUND);
+            }
+            return res.json(new response(quizResult, responseMessage.DATA_FOUND));
+        } catch (error) {
+            next(error)
+        }
+    }
+    async deleteQuiz(req, res, next) {
+        const validSchema = Joi.object({
+            _id: Joi.string().required()
+        });
+        try {
+            const { value } = validSchema.validate(req.params);
+            console.log(">>>>>>", value);
+            const adminResult = await findUser({ _id: req.userId });
+            if (!adminResult) {
+                throw apiError.unauthorized(responseMessage.UNAUTHORIZED);
+            }
+            const quizResult = await findQuiz({ _id: value._id });
+            if (!quizResult) {
+                throw apiError.notFound(responseMessage.DATA_NOT_FOUND);
+            }
+            const result = await deleteQuiz({ _id: value.id });
+            return res.json(new response(result, responseMessage.DELETE_SUCCESS));
         } catch (error) {
             next(error);
         }
     }
-
 }
 
 

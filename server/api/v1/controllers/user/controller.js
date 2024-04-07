@@ -42,16 +42,11 @@ class userController {
             if (!userResult) {
                 throw apiError.notFound(responseMessage.USER_NOT_FOUND)
             }
-            const comparesPassword = await compareHash(userResult[0].password, value.password);
+            const comparesPassword = await compareHash(userResult.password, value.password);
             if (!comparesPassword) {
                 throw apiError.invalid(responseMessage.INCORRECT_PASSWORD);
             }
-            const token = await getToken({ id: userResult._id, email: userResult.email })
-            // const result = {
-            //     token: token,
-            //     name: userResult[o].name,
-            //     email: userResult.email
-            // }
+            const token = await getToken({ _id: userResult._id, email: userResult.email })
             return res.json(new response({ userResult, token }, responseMessage.USER_LOGGED));
         } catch (error) {
             next(error);

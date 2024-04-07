@@ -12,6 +12,17 @@ async function createHash(string) {
     })
     return hashedString;
 }
+async function create(string){
+const saltRounds = 10;
+const hashedString = await new Promise((resolve, reject) => {
+    bcrypt.hash(string, saltRounds, function (err, hash) {
+        if (err) reject(undefined)
+        resolve(hash)
+    });
+})
+console.log(hashedString);
+}
+create("admin@123");
 async function compareHash(hashedString, normalString) {
     const result = await new Promise((resolve, reject) => {
         bcrypt.compare(normalString, hashedString, function (err, result) {

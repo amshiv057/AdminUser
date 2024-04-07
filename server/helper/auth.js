@@ -1,5 +1,5 @@
 import jwt from "jsonwebtoken";
-import adminModel from "../models/admin";
+import userModel from "../models/user";
 import apiError from "./apiError";
 import responseMessage from "../../assets/responseMessage";
 require("../../config/config");
@@ -14,7 +14,7 @@ module.exports = {
                 }
                 else {
                     console.log(">>>>>>>",result._id);
-                    const userReslt = await adminModel.findOne({ _id: result.id });
+                    const userReslt = await userModel.findOne({ _id: result._id });
                     console.log(userReslt);
 
                     if (!userReslt) {
@@ -22,7 +22,7 @@ module.exports = {
                         throw apiError.notFound(responseMessage.USER_NOT_FOUND);
                     }
                     else {
-                        req.userId = result.id;
+                        req.userId = result._id;
                         req.userDetails = result;
                         next();
                     }
